@@ -30,6 +30,7 @@ if ( !class_exists('WC_InvincibleBrands_Custom_ShippingMethod_Field') )
         private function initHooks()
         {
             add_action('woocommerce_init', [$this, 'shipping_methods_add_carrier_id']);
+            add_action('woocommerce_order_status_processing', [$this, 'order_processed']);
         }
 
         /**
@@ -48,6 +49,41 @@ if ( !class_exists('WC_InvincibleBrands_Custom_ShippingMethod_Field') )
 
                         return $fields;
                     });
+            }
+        }
+
+        /**
+         * This method stores _carrier_id ​as a meta key for those orders that
+         * use self::$our_shipping_methods and their status is processing (wc-process).
+         *
+         * @param int $order_id
+         */
+        public function order_processed($order_id) {
+            $order = wc_get_order($order_id);
+            $order_items = $order->get_items('shipping');
+
+            $shipping_item_id = key($order_items);
+            $shipping_item    = $order->get_item($shipping_item_id);
+            $shipping_method  = $shipping_item->get_meta('method_id');
+
+            if ( in_array($shipping_method, self::$our_shipping_methods) ) {
+                $shipping_method_instance_id = $shipping_item->get_meta('instance_id');
+                $shipping = null;
+
+                switch ( $shipping_method ) {
+                    case self::$our_shipping_methods[0]:
+                        $shipping = new WC_Shipping_Flat_Rate($shipping_method_instance_id);
+                        break;
+                    case self::$our_shipping_methods[1]:
+                        $shipping = new WC_Shipping_Free_Shipping($shipping_method_instance_id);
+                        break;
+                }
+
+                $carrier_id = $shipping->get_option('carrier_id');
+                if ( !empty($carrier_id) ) {
+                    $order->update_meta_data('_carrier_id', $carrier_id);
+                    $order->save_meta_data();
+                }
             }
         }
     }
