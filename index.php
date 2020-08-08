@@ -14,11 +14,41 @@ if ( !class_exists('WC_InvincibleBrands_Custom_ShippingMethod_Field') )
 {
     class WC_InvincibleBrands_Custom_ShippingMethod_Field
     {
+        private static $our_shipping_methods = ['flat_rate', 'free_shipping'];
+
         /**
          * WC_InvincibleBrands_Custom_ShippingMethod_Field constructor.
          */
         public function __construct()
         {
+            $this->initHooks();
+        }
+
+        /**
+         * Initialize the Hooks.
+         */
+        private function initHooks()
+        {
+            add_action('woocommerce_init', [$this, 'shipping_methods_add_carrier_id']);
+        }
+
+        /**
+         * Add Carrier Id input field to self::$our_shipping_methods
+         */
+        public function shipping_methods_add_carrier_id()
+        {
+            $shipping_methods = WC()->shipping()->get_shipping_methods();
+            foreach ($shipping_methods as $shipping_method) {
+                if ( in_array($shipping_method->id, self::$our_shipping_methods) )
+                    add_filter('woocommerce_shipping_instance_form_fields_' . $shipping_method->id, function ($fields) {
+                        $fields['carrier_id'] = [
+                            'title'       => 'Carrier ID',
+                            'type'        => 'text',
+                        ];
+
+                        return $fields;
+                    });
+            }
         }
     }
 }
