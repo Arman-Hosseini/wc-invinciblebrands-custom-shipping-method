@@ -23,4 +23,10 @@ if ( !class_exists('WC_InvincibleBrands_Custom_ShippingMethod_Field') )
     }
 }
 
-new WC_InvincibleBrands_Custom_ShippingMethod_Field;
+if ( !in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins'))) )
+    // Show admin notice If the WooCommerce plugin isn't active
+    add_action('admin_notices', function () {
+        printf('<div class="notice notice-warning"><p>To use the <strong>%s plugin</strong>, you must activate the WooCommerce plugin!</p></div>', basename(__DIR__));
+    });
+else
+    new WC_InvincibleBrands_Custom_ShippingMethod_Field;
